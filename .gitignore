@@ -1,0 +1,74 @@
+# =========================
+# FRONTEND (Next.js)
+# =========================
+/node_modules
+/.next/
+/out/
+/build
+coverage
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# vercel
+.vercel
+
+# =========================
+# BACKEND (Django/Python)
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# virtual env
+venv/
+env/
+.venv/
+
+# Django stuff
+db.sqlite3
+media/
+
+# =========================
+# GENERAL
+# =========================
+.DS_Store
+Thumbs.db
+*.pem
+
+# env files (extra safety)
+.env
+.env.local
+
+# frontend build extras
+.next/
+out/
+
+# logs
+*.log
+
+# VS Code
+.vscode/
+
+# IDEs
+.idea/
+
+# Python env config
+.python-version
+
+# sensitive docs
+Important Document/
+*.one
+*.onetoc2
