@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import os
-
+import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config("SECRET_KEY")
@@ -70,8 +70,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #         "PORT": config("DB_PORT", default="5432"),
 #     }
 # }
-import dj_database_url
-from decouple import config
+
+
 
 DATABASES = {
     'default': dj_database_url.parse(config('DATABASE_URL'))
