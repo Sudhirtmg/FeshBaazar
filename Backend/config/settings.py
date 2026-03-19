@@ -60,15 +60,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": config("DB_NAME", default="freshbazaar_db"),
+#         "USER": config("DB_USER", default="freshbazaar_user"),
+#         "PASSWORD": config("DB_PASSWORD", default=""),
+#         "HOST": config("DB_HOST", default="localhost"),
+#         "PORT": config("DB_PORT", default="5432"),
+#     }
+# }
+import dj_database_url
+from decouple import config
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="freshbazaar_db"),
-        "USER": config("DB_USER", default="freshbazaar_user"),
-        "PASSWORD": config("DB_PASSWORD", default=""),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-    }
+    'default': dj_database_url.parse(config('DATABASE_URL'))
 }
 
 AUTH_USER_MODEL = 'accounts.User'
