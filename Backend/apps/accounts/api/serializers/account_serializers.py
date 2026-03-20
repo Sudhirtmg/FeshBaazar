@@ -30,10 +30,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
             # ✅ Auto-create shop when registering as shop owner
             if user.role == User.Role.SHOP_OWNER:
+                # Shop.objects.get_or_create(
+                #     owner=user,
+                #     defaults={"name": f"{user.phone}'s Shop"}
+                # )
                 Shop.objects.get_or_create(
-                    owner=user,
-                    defaults={"name": f"{user.phone}'s Shop"}
-                )
+                owner=user,
+                defaults={
+                    "name": f"{user.phone}'s Shop",
+                    "is_verified": False,  # ✅ pending admin approval
+                }
+            )
 
         return user
 

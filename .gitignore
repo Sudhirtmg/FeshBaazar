@@ -72,3 +72,8 @@ out/
 Important Document/
 *.one
 *.onetoc2
+node_modules
+.env
+.next
+.vercel
+settings_live.py
