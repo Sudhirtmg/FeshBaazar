@@ -45,6 +45,9 @@ class ShopScheduleSerializer(serializers.ModelSerializer):
             "id", "weekday", "weekday_name", "is_active",
             "morning_open", "morning_close",
             "afternoon_open", "afternoon_close",
+            #-------------------------add start-------------------------
+            "close_note",
+            #-------------------------add end-------------------------
         ]
 
 
@@ -60,6 +63,9 @@ class ShopSerializer(serializers.ModelSerializer):
             "id", "name", "slug", "description",
             "address", "city", "phone", "logo",
             "is_open", "is_verified",
+            #-----------------------ADD-START----------------------------------------------------
+            "has_delivery", "delivery_charge",
+            #-----------------------ADD-END------------------------------------------------------
             "is_temporarily_closed", "temporary_close_note",
             "next_opening", "owner_phone",
             "schedules", "created_at",
@@ -84,6 +90,9 @@ class ShopOnboardingSerializer(serializers.ModelSerializer):
         fields = [
             "name", "description", "address",
             "city", "phone", "logo",
+             #-----------------------ADD-START----------------------------------------------------
+            "has_delivery", "delivery_charge",
+            #-----------------------ADD-END------------------------------------------------------
             "is_temporarily_closed", "temporary_close_note",
         ]
 
@@ -116,6 +125,9 @@ class ShopScheduleUpdateSerializer(serializers.Serializer):
                     "morning_close":   slot_data.get("morning_close"),
                     "afternoon_open":  slot_data.get("afternoon_open"),
                     "afternoon_close": slot_data.get("afternoon_close"),
+                    #-------------------------add start-------------------------
+                    "close_note":      slot_data.get("close_note", ""),
+                    #-------------------------add end-------------------------
                 },
             )
         return instance

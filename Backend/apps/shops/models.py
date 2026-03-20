@@ -51,7 +51,7 @@ from django.db import models
 from django.utils.text import slugify
 from django.utils import timezone
 import uuid
-
+from decimal import Decimal
 
 class Shop(models.Model):
     owner       = models.ForeignKey(
@@ -67,6 +67,17 @@ class Shop(models.Model):
     phone       = models.CharField(max_length=20, blank=True)
     logo        = models.ImageField(upload_to="shops/logos/", null=True, blank=True)
     is_verified = models.BooleanField(default=False)
+    # ✅ Delivery settings
+    #-----------------------ADD-START----------------------------------------------------
+    has_delivery    = models.BooleanField(default=True)
+    delivery_charge = models.DecimalField(
+        max_digits=8, decimal_places=2, default=Decimal("50.00")
+    )
+    #-----------------------ADD-END------------------------------------------------------
+
+    # ✅ Manual override
+    is_temporarily_closed = models.BooleanField(default=False)
+    temporary_close_note  = models.CharField(max_length=255, blank=True)
 
     # ✅ Manual override — owner can force close for the day
     is_temporarily_closed = models.BooleanField(default=False)
@@ -78,6 +89,18 @@ class Shop(models.Model):
         if not self.slug:
             base = slugify(self.name) or "shop"
             self.slug = base + "-" + str(uuid.uuid4())[:6]
+        #-------------------------add start-------------------------
+        # Auto-unverify when shop info changes (except schedule/status fields)
+        if self.pk:
+            try:
+                old = Shop.objects.get(pk=self.pk)
+                info_fields = ['name', 'address', 'city', 'phone', 'description']
+                changed = any(getattr(old, f) != getattr(self, f) for f in info_fields)
+                if changed and self.is_verified:
+                    self.is_verified = False
+            except Shop.DoesNotExist:
+                pass
+        #-------------------------add end-------------------------
         super().save(*args, **kwargs)
 
     @property
@@ -156,6 +179,9 @@ class ShopSchedule(models.Model):
     # Afternoon slot e.g. 2:00 PM – 6:00 PM
     afternoon_open  = models.TimeField(null=True, blank=True)
     afternoon_close = models.TimeField(null=True, blank=True)
+    #-------------------------add start-------------------------
+    close_note      = models.CharField(max_length=255, blank=True)
+    #-------------------------add end-------------------------
 
     class Meta:
         unique_together = ["shop", "weekday"]

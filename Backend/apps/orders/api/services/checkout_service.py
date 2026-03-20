@@ -62,7 +62,13 @@ def _group_by_shop(items):
 def _create_order(user, shop, items, delivery_data):
     subtotal  = sum(item.subtotal for item in items)
     is_pickup = _is_pickup(delivery_data)
-    fee       = Decimal("0.00") if is_pickup else shop.delivery_charge
+    #-----------------------CHANGE-START-------------------------------------------------
+    # Use shop's actual delivery charge instead of flat Rs.50
+    fee = Decimal("0.00") if is_pickup else shop.delivery_charge
+    #-----------------------CHANGE-END---------------------------------------------------
+    #-----------------------DELETE-START-------------------------------------------------
+    # fee = Decimal("0.00") if is_pickup else Decimal("50.00")
+    #-----------------------DELETE-END-------------------------------------------------
     total     = subtotal + fee
 
     order = Order.objects.create(

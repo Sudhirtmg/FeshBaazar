@@ -108,7 +108,12 @@ SIMPLE_JWT = {
 # -------------------------------------------------------
 # CORS
 # -------------------------------------------------------
-CORS_ALLOW_ALL_ORIGINS = True  # development only
+# CORS_ALLOW_ALL_ORIGINS = True  # development only
+
+# for live
+CORS_ALLOWED_ORIGINS = [
+    "https://freshbaazaar.vercel.app",
+]
 
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -129,6 +134,9 @@ CORS_ALLOW_METHODS = [
     "PATCH",
     "POST",
     "PUT",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://freshbaazaar.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
