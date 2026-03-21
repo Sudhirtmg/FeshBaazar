@@ -23,12 +23,13 @@ const DEFAULT_SCHEDULE: Omit<ShopSchedule, "id" | "weekday_name">[] = DAYS.map(
     morning_close: "11:00",
     afternoon_open: i < 6 ? "14:00" : null,
     afternoon_close: i < 6 ? "18:00" : null,
+    close_note: "",
   }),
 );
 
 export default function ShopSettingsPage() {
   const router = useRouter();
-  const [expandedDay, setExpandedDay] = useState<number | null>(null)
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingInfo, setSavingInfo] = useState(false);
@@ -46,6 +47,10 @@ export default function ShopSettingsPage() {
     address: "",
     city: "",
     phone: "",
+    //-----------------------ADD-START----------------------------------------------------
+    has_delivery: true,
+    delivery_charge: "50",
+    //-----------------------ADD-END------------------------------------------------------
     is_temporarily_closed: false,
     temporary_close_note: "",
   });
@@ -65,6 +70,10 @@ export default function ShopSettingsPage() {
           address: shopData.address || "",
           city: shopData.city || "",
           phone: shopData.phone || "",
+          //-------------------------add start-------------------------
+          has_delivery: shopData.has_delivery,
+          delivery_charge: shopData.delivery_charge || "50",
+          //-------------------------add end-------------------------
           is_temporarily_closed: shopData.is_temporarily_closed,
           temporary_close_note: shopData.temporary_close_note || "",
         });
@@ -81,6 +90,7 @@ export default function ShopSettingsPage() {
               morning_close: found.morning_close || "",
               afternoon_open: found.afternoon_open || "",
               afternoon_close: found.afternoon_close || "",
+              close_note: found.close_note || "",
             };
           return DEFAULT_SCHEDULE[i];
         });
@@ -123,6 +133,10 @@ export default function ShopSettingsPage() {
       formData.append("address", form.address);
       formData.append("city", form.city);
       formData.append("phone", form.phone);
+      //-------------------------add start-------------------------
+      formData.append("has_delivery", String(form.has_delivery));
+      formData.append("delivery_charge", String(form.delivery_charge));
+      //-------------------------add end-------------------------
       formData.append(
         "is_temporarily_closed",
         String(form.is_temporarily_closed),
@@ -133,7 +147,23 @@ export default function ShopSettingsPage() {
       const updated = await shopService.updateMyShop(formData);
       setShop(updated);
       setLogoFile(null);
+      //-------------------------add start-------------------------
+      // Re-fetch shop to get fresh is_open status
+      const freshShop = await shopService.getMyShop();
+      setShop(freshShop);
+      //-------------------------add end-------------------------
+
       setSuccess("Shop info saved.");
+      //-------------------------add start-------------------------
+      // Show different message depending on verification status after save
+      if (!updated.is_verified) {
+        setSuccess(
+          "Shop info saved. Your shop is now pending re-verification by admin.",
+        );
+      } else {
+        setSuccess("Shop info saved.");
+      }
+      //-------------------------add end-------------------------
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       const data = err.response?.data;
@@ -163,8 +193,14 @@ export default function ShopSettingsPage() {
         morning_close: s.morning_close || null,
         afternoon_open: s.afternoon_open || null,
         afternoon_close: s.afternoon_close || null,
+        close_note: s.close_note || "",
       }));
       await shopService.updateSchedule(payload);
+      //-------------------------add start-------------------------
+      // Refresh shop data so is_open status updates immediately
+      const updatedShop = await shopService.getMyShop();
+      setShop(updatedShop);
+      //-------------------------add end-------------------------
       setSuccess("Schedule saved.");
       setTimeout(() => setSuccess(""), 3000);
     } catch {
@@ -194,13 +230,15 @@ export default function ShopSettingsPage() {
         <h1 className="text-xl font-bold text-gray-900">Shop settings</h1>
 
         {/* Verification banner */}
+        {/*-------------------------change start-------------------------*/}
         {!shop.is_verified ? (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <p className="text-sm font-medium text-amber-800">
               Pending admin verification
             </p>
             <p className="text-xs text-amber-600 mt-1">
-              Your shop won't be visible to customers until verified by admin.
+              Your shop won't be visible to customers until an admin verifies
+              it. This usually takes up to 24 hours.
             </p>
           </div>
         ) : (
@@ -213,11 +251,18 @@ export default function ShopSettingsPage() {
                 Visible to customers.
               </p>
             </div>
-            <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+            <span
+              className={`text-xs px-2 py-1 rounded-full font-medium ${
+                shop.is_open
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
               {shop.is_open ? "Open now" : "Closed now"}
             </span>
           </div>
         )}
+        {/*-------------------------change end-------------------------*/}
 
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -333,10 +378,90 @@ export default function ShopSettingsPage() {
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
             />
           </div>
+          {/*-------------------------add start-------------------------*/}
+          {/* Delivery settings */}
+          <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900">
+              Delivery settings
+            </h3>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
+              <div>
+                <p className="text-sm text-gray-700">Offer delivery</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Customers can get orders delivered to their address
+                </p>
+              </div>
+              <div
+                style={{
+                  width: "48px",
+                  height: "24px",
+                  borderRadius: "12px",
+                  backgroundColor: form.has_delivery ? "#22c55e" : "#d1d5db",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  position: "relative",
+                  transition: "background-color 0.2s",
+                }}
+                onClick={() =>
+                  setForm({ ...form, has_delivery: !form.has_delivery })
+                }
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "2px",
+                    left: form.has_delivery ? "26px" : "2px",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    backgroundColor: "white",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    transition: "left 0.2s",
+                  }}
+                />
+              </div>
+            </div>
+            {form.has_delivery && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery charge (Rs.)
+                </label>
+                <input
+                  type="number"
+                  value={form.delivery_charge}
+                  onChange={(e) =>
+                    setForm({ ...form, delivery_charge: e.target.value })
+                  }
+                  placeholder="50"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            )}
+            {!form.has_delivery && (
+              <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2">
+                Customers can only pick up orders from your shop
+              </p>
+            )}
+          </div>
+          {/*-------------------------add end-------------------------*/}
 
           {/* Temporary closure */}
-          <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          {/* <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
               <div>
                 <p className="text-sm font-medium text-gray-900">
                   Close shop today
@@ -346,7 +471,18 @@ export default function ShopSettingsPage() {
                 </p>
               </div>
               <div
-                className={`w-12 h-6 rounded-full transition-colors cursor-pointer ${form.is_temporarily_closed ? "bg-red-500" : "bg-gray-300"}`}
+                style={{
+                  width: "48px",
+                  height: "24px",
+                  borderRadius: "12px",
+                  backgroundColor: form.is_temporarily_closed
+                    ? "#ef4444"
+                    : "#d1d5db",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  position: "relative",
+                  transition: "background-color 0.2s",
+                }}
                 onClick={() =>
                   setForm({
                     ...form,
@@ -355,7 +491,17 @@ export default function ShopSettingsPage() {
                 }
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${form.is_temporarily_closed ? "translate-x-6" : "translate-x-0.5"}`}
+                  style={{
+                    position: "absolute",
+                    top: "2px",
+                    left: form.is_temporarily_closed ? "26px" : "2px",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    backgroundColor: "white",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    transition: "left 0.2s",
+                  }}
                 />
               </div>
             </div>
@@ -370,7 +516,7 @@ export default function ShopSettingsPage() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
               />
             )}
-          </div>
+          </div> */}
 
           <button
             type="submit"
@@ -381,160 +527,207 @@ export default function ShopSettingsPage() {
           </button>
         </form>
 
-        
         {/* ── WEEKLY SCHEDULE ── */}
-        {/* ── WEEKLY SCHEDULE ── */}
-<div className="bg-white rounded-xl border border-gray-200 p-5">
-    <h2 className="font-semibold text-gray-900 mb-1">Weekly schedule</h2>
-    <p className="text-xs text-gray-500 mb-4">Set your hours or close a day</p>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h2 className="font-semibold text-gray-900 mb-1">Weekly schedule</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Set your hours or close a day
+          </p>
 
-    <div className="space-y-2">
-        {schedule.map((slot, i) => (
-            <div
+          <div className="space-y-2">
+            {schedule.map((slot, i) => (
+              <div
                 key={i}
                 className={`rounded-lg border transition-colors ${
-                    slot.is_active
-                        ? 'border-gray-200'
-                        : 'border-red-100 bg-red-50'
+                  slot.is_active
+                    ? "border-gray-200"
+                    : "border-red-100 bg-red-50"
                 }`}
-            >
+              >
                 {/* ── Top row — day name + hours summary + buttons ── */}
                 <div className="flex items-center justify-between px-3 py-2.5 gap-2">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className={`text-sm font-medium w-24 flex-shrink-0 ${
-                            slot.is_active ? 'text-gray-900' : 'text-red-400 line-through'
-                        }`}>
-                            {DAYS[i]}
-                        </span>
-                        {slot.is_active ? (
-                            <span className="text-xs text-gray-500 truncate">
-                                {slot.morning_open
-                                    ? `${slot.morning_open}–${slot.morning_close}`
-                                    : '—'
-                                }
-                                {slot.afternoon_open
-                                    ? `  ·  ${slot.afternoon_open}–${slot.afternoon_close}`
-                                    : ''
-                                }
-                            </span>
-                        ) : (
-                            <span className="text-xs text-red-400 font-medium">
-                                Closed all day
-                            </span>
-                        )}
-                    </div>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span
+                      className={`text-sm font-medium w-24 flex-shrink-0 ${
+                        slot.is_active
+                          ? "text-gray-900"
+                          : "text-red-400 line-through"
+                      }`}
+                    >
+                      {DAYS[i]}
+                    </span>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        {/* ✅ Close/Open day button — always visible */}
-                        {slot.is_active ? (
-                            <button
-                                type="button"
-                                onClick={() => updateSlot(i, 'is_active', false)}
-                                className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 hover:bg-red-50 px-2.5 py-1 rounded-lg transition-colors"
-                            >
-                                Close day
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => updateSlot(i, 'is_active', true)}
-                                className="text-xs text-green-600 hover:text-green-700 border border-green-200 hover:border-green-400 hover:bg-green-50 px-2.5 py-1 rounded-lg transition-colors"
-                            >
-                                Open day
-                            </button>
-                        )}
+                    {slot.is_active ? (
+                      <span className="text-xs text-gray-500 truncate">
+                        {slot.morning_open
+                          ? `${slot.morning_open}–${slot.morning_close}`
+                          : "—"}
+                        {slot.afternoon_open
+                          ? `  ·  ${slot.afternoon_open}–${slot.afternoon_close}`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-red-400 font-medium">
+                        {slot.close_note
+                          ? `Closed — ${slot.close_note}`
+                          : "Closed all day"}
+                      </span>
+                    )}
+                  </div>
 
-                        {/* Edit hours button */}
-                        {slot.is_active && (
-                            <button
-                                type="button"
-                                onClick={() => setExpandedDay(expandedDay === i ? null : i)}
-                                className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 px-2.5 py-1 rounded-lg transition-colors"
-                            >
-                                {expandedDay === i ? 'Done' : 'Edit hours'}
-                            </button>
-                        )}
-                    </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* ✅ Close/Open day button — always visible */}
+                    {slot.is_active ? (
+                      <button
+                        type="button"
+                        onClick={() => updateSlot(i, "is_active", false)}
+                        className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 hover:bg-red-50 px-2.5 py-1 rounded-lg transition-colors"
+                      >
+                        Close day
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => updateSlot(i, "is_active", true)}
+                        className="text-xs text-green-600 hover:text-green-700 border border-green-200 hover:border-green-400 hover:bg-green-50 px-2.5 py-1 rounded-lg transition-colors"
+                      >
+                        Open day
+                      </button>
+                    )}
+
+                    {/* Edit hours button */}
+                    {slot.is_active && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedDay(expandedDay === i ? null : i)
+                        }
+                        className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 px-2.5 py-1 rounded-lg transition-colors"
+                      >
+                        {expandedDay === i ? "Done" : "Edit hours"}
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* ── Close note input — shown when day is closed ── */}
+                {/*-------------------------add start-------------------------*/}
+                {!slot.is_active && (
+                  <div className="px-3 pb-3 pt-1 border-t border-red-100">
+                    <input
+                      type="text"
+                      value={slot.close_note || ""}
+                      onChange={(e) =>
+                        updateSlot(i, "close_note", e.target.value)
+                      }
+                      placeholder="Reason (optional) — e.g. Public holiday"
+                      className="w-full border border-red-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-400 bg-red-50 text-red-700 placeholder-red-300"
+                    />
+                  </div>
+                )}
+                {/*-------------------------add end-------------------------*/}
 
                 {/* ── Expanded editor — only when editing hours ── */}
                 {slot.is_active && expandedDay === i && (
-                    <div className="px-3 pb-3 pt-1 border-t border-gray-100 space-y-3">
-                        {/* Morning */}
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1.5">
-                                Morning hours
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="time"
-                                    value={slot.morning_open || ''}
-                                    onChange={e => updateSlot(i, 'morning_open', e.target.value)}
-                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                />
-                                <span className="text-gray-400 text-sm flex-shrink-0">to</span>
-                                <input
-                                    type="time"
-                                    value={slot.morning_close || ''}
-                                    onChange={e => updateSlot(i, 'morning_close', e.target.value)}
-                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Afternoon */}
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-xs font-medium text-gray-500">
-                                    Afternoon hours
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const has = slot.afternoon_open
-                                        updateSlot(i, 'afternoon_open',  has ? null : '14:00')
-                                        updateSlot(i, 'afternoon_close', has ? null : '18:00')
-                                    }}
-                                    className="text-xs text-green-600 hover:text-green-700 font-medium"
-                                >
-                                    {slot.afternoon_open ? 'Remove afternoon' : '+ Add afternoon'}
-                                </button>
-                            </div>
-                            {slot.afternoon_open ? (
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="time"
-                                        value={slot.afternoon_open || ''}
-                                        onChange={e => updateSlot(i, 'afternoon_open', e.target.value)}
-                                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    />
-                                    <span className="text-gray-400 text-sm flex-shrink-0">to</span>
-                                    <input
-                                        type="time"
-                                        value={slot.afternoon_close || ''}
-                                        onChange={e => updateSlot(i, 'afternoon_close', e.target.value)}
-                                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    />
-                                </div>
-                            ) : (
-                                <p className="text-xs text-gray-400">No afternoon slot</p>
-                            )}
-                        </div>
+                  <div className="px-3 pb-3 pt-1 border-t border-gray-100 space-y-3">
+                    {/* Morning */}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1.5">
+                        Morning hours
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={slot.morning_open || ""}
+                          onChange={(e) =>
+                            updateSlot(i, "morning_open", e.target.value)
+                          }
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                        <span className="text-gray-400 text-sm flex-shrink-0">
+                          to
+                        </span>
+                        <input
+                          type="time"
+                          value={slot.morning_close || ""}
+                          onChange={(e) =>
+                            updateSlot(i, "morning_close", e.target.value)
+                          }
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
                     </div>
-                )}
-            </div>
-        ))}
-    </div>
 
-    <button
-        onClick={handleSaveSchedule}
-        disabled={savingSched}
-        className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
-    >
-        {savingSched ? 'Saving...' : 'Save schedule'}
-    </button>
-</div>
-      
+                    {/* Afternoon */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-xs font-medium text-gray-500">
+                          Afternoon hours
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const has = slot.afternoon_open;
+                            updateSlot(
+                              i,
+                              "afternoon_open",
+                              has ? null : "14:00",
+                            );
+                            updateSlot(
+                              i,
+                              "afternoon_close",
+                              has ? null : "18:00",
+                            );
+                          }}
+                          className="text-xs text-green-600 hover:text-green-700 font-medium"
+                        >
+                          {slot.afternoon_open
+                            ? "Remove afternoon"
+                            : "+ Add afternoon"}
+                        </button>
+                      </div>
+                      {slot.afternoon_open ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            value={slot.afternoon_open || ""}
+                            onChange={(e) =>
+                              updateSlot(i, "afternoon_open", e.target.value)
+                            }
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                          />
+                          <span className="text-gray-400 text-sm flex-shrink-0">
+                            to
+                          </span>
+                          <input
+                            type="time"
+                            value={slot.afternoon_close || ""}
+                            onChange={(e) =>
+                              updateSlot(i, "afternoon_close", e.target.value)
+                            }
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400">
+                          No afternoon slot
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={handleSaveSchedule}
+            disabled={savingSched}
+            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+          >
+            {savingSched ? "Saving..." : "Save schedule"}
+          </button>
+        </div>
       </div>
     </div>
   );

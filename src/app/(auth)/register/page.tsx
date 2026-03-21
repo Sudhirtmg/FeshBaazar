@@ -27,8 +27,10 @@ export default function RegisterPage() {
       Cookies.set("access_token", res.tokens.access, { expires: 1 });
       Cookies.set("refresh_token", res.tokens.refresh, { expires: 30 });
       setUser(res.user);
+      //-------------------------change start-------------------------
       if (res.user.role === "shop_owner") {
-        router.push("/dashboard");
+        router.push("/dashboard/settings"); // ✅ go to settings to fill shop info
+        //-------------------------change end-------------------------
       } else {
         router.push("/shops");
       }

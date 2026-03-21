@@ -2,8 +2,15 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
 
+
+// for local development
+// const api = axios.create({
+//     baseURL: process.env.NEXT_PUBLIC_API_URL,
+// })
+
+// for live
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    baseURL: "https://feshbaazar.onrender.com"
 })
 
 api.interceptors.request.use((config) => {

@@ -17,6 +17,9 @@ export interface ShopSchedule {
     morning_close: string | null
     afternoon_open: string | null
     afternoon_close: string | null
+    //-------------------------add start-------------------------
+    close_note: string
+    //-------------------------add end-------------------------
 }
 
 export interface Shop {
@@ -30,12 +33,18 @@ export interface Shop {
     logo: string | null
     is_open: boolean
     is_verified: boolean
+    //-----------------------ADD-START----------------------------------------------------
+    has_delivery:    boolean
+    delivery_charge: string
+    //-----------------------ADD-END------------------------------------------------------
     is_temporarily_closed: boolean
     temporary_close_note: string
     next_opening: string | null
     owner_phone: string
     schedules: ShopSchedule[]
     created_at: string
+
+
 }
 
 export interface CutType {

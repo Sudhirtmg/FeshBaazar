@@ -26,8 +26,6 @@ export default function ShopsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-     
-
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex gap-2 mb-6">
           <input
@@ -59,22 +57,62 @@ export default function ShopsPage() {
                 href={`/shops/${shop.slug}`}
                 className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow block"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h2 className="font-semibold text-gray-900">{shop.name}</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">{shop.city}</p>
+                <div className="flex items-start gap-3 mb-3">
+                  {/* Shop logo */}
+                  {shop.logo ? (
+                    <img
+                      src={shop.logo}
+                      alt={shop.name}
+                      className="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-green-50 border border-green-100 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#16a34a"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Name + city + status */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h2 className="font-semibold text-gray-900 truncate">
+                          {shop.name}
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          {shop.city}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${
+                          shop.is_open
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-600"
+                        }`}
+                      >
+                        {shop.is_open ? "Open" : "Closed"}
+                      </span>
+                    </div>
                   </div>
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${shop.is_open ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}
-                  >
-                    {shop.is_open ? "Open" : "Closed"}
-                  </span>
                 </div>
+
                 {shop.description && (
                   <p className="text-sm text-gray-500 mb-3 line-clamp-2">
                     {shop.description}
                   </p>
                 )}
+
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">{shop.address}</span>
                   <span className="text-xs text-green-600 font-medium">
