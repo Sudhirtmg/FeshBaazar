@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
         return [
             {
                 source: "/api/:path*",
-                destination: "https://freshbazaar-api.onrender.com/api/:path*"
+                destination: "https://feshbazaar-api.onrender.com/api/:path*"
             },
         ];
     },
