@@ -1,0 +1,7 @@
+npx create-next-app@latest
+npm install axios js-cookie zustand
+# axios — makes API calls to your Django backend
+# js-cookie — stores the JWT token in cookies
+# zustand — simple state management for auth state
+npm install -D @types/js-cookie 
+#The extra `@types/js-cookie` is needed for TypeScript to understand js-cookie.

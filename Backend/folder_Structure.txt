@@ -1,0 +1,36 @@
+MEAT_PLATFORM /
+Backend
+apps/
+accounts/
+api / serializers / account_serializer.py
+api / services / account_service.py
+api / views / account_views.py
+models.py · admin.py · apps.py · urls.py · tests.py · migrations/
+cart/
+api / serializers / cart_serializer.py
+api / services / cart_service.py
+api / views / cart_views.py
+models.py · admin.py · apps.py · urls.py · tests.py · migrations/
+common/
+permissions.py
+customers/
+api / serializers / api / services / api / views /
+models.py · admin.py · apps.py · urls.py · tests.py · migrations/
+(serializers, services, views — files not shown in screenshots)
+deliveries/
+api / serializers / api / services / api / views /
+models.py · admin.py · apps.py · urls.py · tests.py · migrations/
+(serializers, services, views — files not shown in screenshots)
+orders/
+api / serializers / order_serializer.py
+api / services / checkout_service.py · status_service.py
+api / views / order_views.py
+selectors/ · models.py · admin.py · apps.py · urls.py · tests.py · migrations/
+products/
+api / serializers / product_serializer.py
+api / services / api / views / product_views.py
+models.py · admin.py · apps.py · urls.py · tests.py · migrations/
+shops/
+api / serializers / shop_serializer.py
+api / services / api / views / shop_views.py
+models.py · admin.py · apps.py · urls.py · tests.py · migrations/
