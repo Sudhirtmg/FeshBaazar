@@ -52,7 +52,11 @@ class LedgerListView(APIView):
                 for item in e.order.items.all():
                     items.append({
                         "product_name": item.product_name_snapshot,
-                        "price_per_kg": float(item.price_per_kg_snapshot or 0),
+                        # piece orders: price is in price_per_kg_final (set after weighing)
+                        # kg orders:    price is in price_per_kg_snapshot (set at order time)
+                        "price_per_kg": float(
+                            item.price_per_kg_final or item.price_per_kg_snapshot or 0
+                        ),
                         "quantity":     float(item.quantity),
                         "total":        float(item.line_total or 0),
                     })
