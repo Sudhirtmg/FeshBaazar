@@ -52,7 +52,8 @@ urlpatterns = [
     path("ledger/staff-summary/",       StaffCollectionSummaryView.as_view(),   name="ledger-staff-summary"),
     path("ledger/all-staff/",           AllStaffCollectionView.as_view(),       name="ledger-all-staff"),
 
-    # Reports & map
+    # Reports & map (both singular and plural supported)
     path("report/daily/",               DailyReportView.as_view(),              name="b2b-daily-report"),
+    path("reports/daily/",              DailyReportView.as_view(),              name="b2b-daily-report-alias"),
     path("map/",                        MapLocationsView.as_view(),             name="b2b-map"),
 ]

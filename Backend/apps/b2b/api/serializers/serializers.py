@@ -45,6 +45,12 @@ class ColdStoragePrivateSerializer(serializers.ModelSerializer):
 # ── B2B Orders ────────────────────────────────────────────────────────────────
 
 class B2BOrderItemSerializer(serializers.ModelSerializer):
+    # Computed: True when line_total is set (kg items always priced; piece items priced after weighing)
+    is_priced = serializers.SerializerMethodField()
+
+    def get_is_priced(self, obj):
+        return obj.line_total is not None
+
     class Meta:
         model  = B2BOrderItem
         fields = [
@@ -52,8 +58,9 @@ class B2BOrderItemSerializer(serializers.ModelSerializer):
             "unit_type", "quantity", "quantity_kg",
             "price_per_kg_snapshot", "actual_weight_kg",
             "price_per_kg_final", "line_total", "price",
+            "is_priced",
         ]
-        read_only_fields = ["product_name_snapshot", "line_total", "price"]
+        read_only_fields = ["product_name_snapshot", "line_total", "price", "is_priced"]
 
 
 class B2BOrderItemCreateSerializer(serializers.ModelSerializer):
@@ -135,22 +142,40 @@ class B2BOrderCreateSerializer(serializers.ModelSerializer):
 
 
 class B2BOrderSerializer(serializers.ModelSerializer):
-    items        = B2BOrderItemSerializer(many=True, read_only=True)
-    shop_name    = serializers.CharField(source="shop.name", read_only=True)
+    items             = B2BOrderItemSerializer(many=True, read_only=True)
+    shop_name         = serializers.CharField(source="shop.name", read_only=True)
     cold_storage_name = serializers.CharField(source="cold_storage.name", read_only=True)
     payment_status    = serializers.CharField(read_only=True)
+
+    # Computed fields consumed by the frontend
+    has_piece_items   = serializers.SerializerMethodField()
+    all_items_priced  = serializers.SerializerMethodField()
+    is_paid           = serializers.BooleanField(read_only=True)
+
+    def get_has_piece_items(self, obj):
+        return obj.items.filter(unit_type="piece").exists()
+
+    def get_all_items_priced(self, obj):
+        return not obj.items.filter(unit_type="piece", line_total__isnull=True).exists()
 
     class Meta:
         model  = B2BOrder
         fields = [
             "id", "shop", "shop_name", "cold_storage", "cold_storage_name",
-            "status", "payment_type", "payment_status", "total_price",
-            "paid_amount", "delivery_type", "delivery_address",
+            "status", "payment_type", "payment_status", "is_paid",
+            "total_price", "paid_amount",
+            "delivery_type", "delivery_address",
             "delivery_latitude", "delivery_longitude",
-            "notes", "order_source", "items",
+            "notes", "order_source",
+            "has_piece_items", "all_items_priced",
+            "items",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "shop", "cold_storage", "total_price", "created_at", "updated_at"]
+        read_only_fields = [
+            "id", "shop", "cold_storage", "total_price",
+            "is_paid", "has_piece_items", "all_items_priced",
+            "created_at", "updated_at",
+        ]
 
 
 class SetPriceSerializer(serializers.Serializer):
