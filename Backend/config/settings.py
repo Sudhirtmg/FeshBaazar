@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'apps.products',
     'apps.cart',
     'apps.orders',
+    'apps.b2b',
     'apps.deliveries',
     'apps.customers',
     'apps.common',
