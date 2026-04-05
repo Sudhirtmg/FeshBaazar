@@ -50,13 +50,22 @@ class LedgerListView(APIView):
             items = []
             if e.order:
                 for item in e.order.items.all():
+                    # Resolve price/kg with 3-level fallback:
+                    # 1. price_per_kg_final  — piece orders (set after weighing)
+                    # 2. price_per_kg_snapshot — kg orders (set at order time)
+                    # 3. derive from line_total ÷ quantity — legacy/walk-in orders
+                    #    where neither price field was stored but total is known
+                    price_per_kg = float(
+                        item.price_per_kg_final or item.price_per_kg_snapshot or 0
+                    )
+                    if price_per_kg == 0 and item.line_total and item.quantity:
+                        price_per_kg = round(
+                            float(item.line_total) / float(item.quantity), 2
+                        )
+
                     items.append({
                         "product_name": item.product_name_snapshot,
-                        # piece orders: price is in price_per_kg_final (set after weighing)
-                        # kg orders:    price is in price_per_kg_snapshot (set at order time)
-                        "price_per_kg": float(
-                            item.price_per_kg_final or item.price_per_kg_snapshot or 0
-                        ),
+                        "price_per_kg": price_per_kg,
                         "quantity":     float(item.quantity),
                         "total":        float(item.line_total or 0),
                     })
