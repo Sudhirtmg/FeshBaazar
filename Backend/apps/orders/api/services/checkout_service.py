@@ -3,16 +3,16 @@ from decimal import Decimal
 from django.db import transaction
 from apps.orders.models import Order, OrderItem, OrderStatusHistory
 from apps.deliveries.models import Delivery
-
+from django.utils import timezone
 
 class CheckoutError(Exception):
     pass
 
-
-def _is_pickup(delivery_data):
-    address = delivery_data.get("delivery_address", "")
-    return address.startswith("PICKUP —")
-
+#--------------Delete-Start--------------------------------
+# def _is_pickup(delivery_data):
+#     address = delivery_data.get("delivery_address", "")
+#     return address.startswith("PICKUP —")
+#--------------Delete-End--------------------------------
 
 @transaction.atomic
 def place_order(user, delivery_data):
@@ -61,7 +61,15 @@ def _group_by_shop(items):
 
 def _create_order(user, shop, items, delivery_data):
     subtotal  = sum(item.subtotal for item in items)
-    is_pickup = _is_pickup(delivery_data)
+     #--------------Add-Start--------------------------------
+    fulfillment_type = delivery_data.get("fulfillment_type", Order.FulfillmentType.DELIVERY)
+    is_pickup        = fulfillment_type == Order.FulfillmentType.PICKUP
+    scheduled_time   = delivery_data.get("scheduled_time", None)
+    #--------------Add-End--------------------------------
+    
+    #--------------Delete-Start--------------------------------
+    # is_pickup = _is_pickup(delivery_data)
+    #--------------Delete-End--------------------------------
     #-----------------------CHANGE-START-------------------------------------------------
     # Use shop's actual delivery charge instead of flat Rs.50
     fee = Decimal("0.00") if is_pickup else shop.delivery_charge
@@ -70,6 +78,12 @@ def _create_order(user, shop, items, delivery_data):
     # fee = Decimal("0.00") if is_pickup else Decimal("50.00")
     #-----------------------DELETE-END-------------------------------------------------
     total     = subtotal + fee
+    #--------------Add-Start--------------------------------
+    # if is_pickup and scheduled_time:
+        
+    #     if scheduled_time <= timezone.now() + timedelta(minutes=29):
+    #         raise CheckoutError("Scheduled time must be at least 30 minutes from now.")
+    #--------------Add-End--------------------------------
 
     order = Order.objects.create(
         customer         = user,
@@ -77,6 +91,10 @@ def _create_order(user, shop, items, delivery_data):
         subtotal         = subtotal,
         delivery_fee     = fee,
         total_amount     = total,
+        #--------------Add-Start--------------------------------
+        fulfillment_type = fulfillment_type,
+        scheduled_time   = scheduled_time,
+        #--------------Add-End--------------------------------
         payment_method   = delivery_data.get("payment_method", Order.PaymentMethod.COD),
         delivery_name    = delivery_data["delivery_name"],
         delivery_phone   = delivery_data["delivery_phone"],
@@ -101,7 +119,14 @@ def _create_order(user, shop, items, delivery_data):
         from_status = "",
         to_status   = Order.Status.PENDING,
         changed_by  = user,
-        note        = "Order placed",
+        #--------------Change-Start--------------------------------
+        # note = "Order placed",
+        note        = "Order placed" if not scheduled_time else f"Scheduled pickup order placed for {scheduled_time}",
+        #--------------Change-End--------------------------------
     )
-    Delivery.objects.create(order=order)
+    #--------------Change-Start--------------------------------
+    # Delivery.objects.create(order=order)
+    if not is_pickup:
+        Delivery.objects.create(order=order)
+    #--------------Change-End--------------------------------
     return order

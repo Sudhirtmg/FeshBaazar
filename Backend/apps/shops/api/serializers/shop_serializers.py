@@ -1,34 +1,3 @@
-# # apps/shops/api/serializers/shop_serializers.py
-# from rest_framework import serializers
-# from apps.shops.models import Shop
-
-
-# class ShopSerializer(serializers.ModelSerializer):
-#     owner_phone = serializers.CharField(source="owner.phone", read_only=True)
-
-#     class Meta:
-#         model  = Shop
-#         fields = [
-#             "id", "name", "slug", "description", "phone",
-#             "address", "city", "latitude", "longitude",
-#             "is_open", "is_verified", "has_delivery", "has_pickup",
-#             "delivery_charge", "owner_phone", "created_at",
-#         ]
-#         read_only_fields = ["slug", "is_verified", "created_at"]
-
-
-# class ShopCreateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model  = Shop
-#         fields = [
-#             "name", "description", "phone",
-#             "address", "city", "latitude", "longitude",
-#         ]
-
-#     def create(self, validated_data):
-#         owner = self.context["request"].user
-#         return Shop.objects.create(owner=owner, **validated_data)
-
 # apps/shops/api/serializers/shop_serializers.py
 from rest_framework import serializers
 from apps.shops.models import Shop, ShopSchedule
@@ -62,7 +31,8 @@ class ShopSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "slug", "description",
             "address", "city", "phone", "logo",
-            "is_open", "is_verified",
+            "latitude", "longitude",
+            "is_open", "is_verified","verification_status", "rejection_reason",
             #-----------------------ADD-START----------------------------------------------------
             "has_delivery", "delivery_charge",
             #-----------------------ADD-END------------------------------------------------------
@@ -71,7 +41,8 @@ class ShopSerializer(serializers.ModelSerializer):
             "schedules", "created_at",
         ]
         read_only_fields = [
-            "slug", "is_verified", "is_open",
+            "slug", "is_verified", "verification_status", "rejection_reason",
+            "is_open",
             "next_opening", "created_at", "owner_phone",
         ]
 
@@ -90,6 +61,7 @@ class ShopOnboardingSerializer(serializers.ModelSerializer):
         fields = [
             "name", "description", "address",
             "city", "phone", "logo",
+            "latitude", "longitude",
              #-----------------------ADD-START----------------------------------------------------
             "has_delivery", "delivery_charge",
             #-----------------------ADD-END------------------------------------------------------

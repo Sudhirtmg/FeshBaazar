@@ -15,6 +15,10 @@ class Order(models.Model):
     class PaymentMethod(models.TextChoices):
         COD    = "cod",    "Cash on Delivery"
         ONLINE = "online", "Online Payment"
+        
+    class FulfillmentType(models.TextChoices):
+        DELIVERY = "delivery", "Delivery"
+        PICKUP   = "pickup",   "Pickup"
 
     VALID_TRANSITIONS = {
         Status.PENDING:          [Status.CONFIRMED, Status.CANCELLED],
@@ -45,6 +49,14 @@ class Order(models.Model):
         choices=PaymentMethod.choices,
         default=PaymentMethod.COD,
     )
+    fulfillment_type = models.CharField(
+        max_length=20,
+        choices=FulfillmentType.choices,
+        default=FulfillmentType.DELIVERY,
+    )
+    
+    scheduled_time = models.DateTimeField(null=True, blank=True)
+    auto_cancel_notified = models.BooleanField(default=False)
     subtotal         = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee     = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount     = models.DecimalField(max_digits=10, decimal_places=2, default=0)

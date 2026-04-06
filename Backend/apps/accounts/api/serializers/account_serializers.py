@@ -7,10 +7,10 @@ from django.db import transaction
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
-    email    = serializers.EmailField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
 
     class Meta:
-        model  = User
+        model = User
         fields = ["phone", "email", "password", "role"]
 
     def validate_role(self, value):
@@ -20,47 +20,88 @@ class RegisterSerializer(serializers.ModelSerializer):
                 "You can only register as a customer or shop owner."
             )
         return value
+    
+    #--------------Add-Start----------------
+    def validate_phone(self, value):
+        return value.replace(" ", "").replace("-", "").strip()
+    #--------------Add-End----------------
 
     def create(self, validated_data):
         # ✅ Fixed: single pop, converts empty string to None
         email = validated_data.pop("email", None) or None
+        role = validated_data.get("role") or User.Role.CUSTOMER
+        #--------------Add-Start----------------
+        phone = validated_data["phone"].replace(" ", "").replace("-", "").strip()
+        #--------------Add-End----------------
 
         with transaction.atomic():
-            user = User.objects.create_user(email=email, **validated_data)
+            user = User.objects.create_user(
+                phone=phone,
+                password=validated_data["password"],
+                email=email,
+                role=role,
+            )
 
             # ✅ Auto-create shop when registering as shop owner
             if user.role == User.Role.SHOP_OWNER:
-                # Shop.objects.get_or_create(
-                #     owner=user,
-                #     defaults={"name": f"{user.phone}'s Shop"}
-                # )
                 Shop.objects.get_or_create(
-                owner=user,
-                defaults={
-                    "name": f"{user.phone}'s Shop",
-                    "is_verified": False,  # ✅ pending admin approval
-                }
-            )
+                        owner=user,
+                        defaults={
+                            "name": f"{user.phone}'s Shop",
+                            "is_verified": False,  # ✅ pending admin approval
+                        },
+                )
 
         return user
 
 
 class LoginSerializer(serializers.Serializer):
-    phone    = serializers.CharField()
+    phone = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        user = authenticate(username=data["phone"], password=data["password"])
-        if not user:
-            raise serializers.ValidationError("Invalid phone or password.")
-        if not user.is_active:
-            raise serializers.ValidationError("Account is disabled.")
-        data["user"] = user
-        return data
+        phone = data["phone"].replace(" ", "").replace("-", "").strip()
 
+        user = authenticate(
+            username=phone,
+            password=data["password"]
+        )
+
+        if not user:
+            raise serializers.ValidationError({
+                "detail": "Invalid phone or password."
+            })
+
+        if not user.is_active:
+            raise serializers.ValidationError({
+                "detail": "Account is disabled."
+            })
+
+        data["user"] = user
+        data["role"] = user.role
+        data["user_id"] = user.id
+        return data
+    
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model        = User
-        fields       = ["id", "phone", "email", "role", "profile_image", "date_joined"]
+        model = User
+        fields = [
+            "name",
+            "id",
+            "phone",
+            "email",
+            "role",
+            "profile_image",
+            "date_joined",
+
+            # 🔥 ADD THESE (VERY IMPORTANT)
+            "can_collect_payment",
+            "can_view_ledger",
+            "can_create_order",
+            "can_manage_products",
+            "can_view_orders",
+            "can_deliver_orders",
+        ]
+
         read_only_fields = ["role", "date_joined"]

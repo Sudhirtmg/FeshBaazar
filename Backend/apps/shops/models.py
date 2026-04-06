@@ -1,51 +1,3 @@
-# # apps/shops/models.py
-# from django.db import models
-# from django.utils.text import slugify
-
-
-# class Shop(models.Model):
-#     owner       = models.ForeignKey(
-#         "accounts.User",
-#         on_delete=models.CASCADE,
-#         related_name="shops",
-#         limit_choices_to={"role": "shop_owner"},
-#     )
-#     name        = models.CharField(max_length=255)
-#     slug        = models.SlugField(unique=True, blank=True)
-#     description = models.TextField(blank=True)
-#     phone       = models.CharField(max_length=20)
-#     address     = models.TextField()
-#     city        = models.CharField(max_length=100)
-#     latitude    = models.DecimalField(
-#         max_digits=9, decimal_places=6, null=True, blank=True
-#     )
-#     longitude   = models.DecimalField(
-#         max_digits=9, decimal_places=6, null=True, blank=True
-#     )
-#     is_open     = models.BooleanField(default=True)
-#     is_verified = models.BooleanField(default=False)
-#     has_delivery = models.BooleanField(default=True)  
-#     has_pickup   = models.BooleanField(default=True)
-#     delivery_charge = models.DecimalField(max_digits=8, decimal_places=2, default=50.00)
-#     created_at  = models.DateTimeField(auto_now_add=True)
-#     updated_at  = models.DateTimeField(auto_now=True)
-
-#     def save(self, *args, **kwargs):
-#         if not self.slug:
-#             base = slugify(self.name)
-#             slug = base
-#             n    = 1
-#             # handles duplicate names: "moms-shop", "moms-shop-2", etc.
-#             while Shop.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-#                 slug = f"{base}-{n}"
-#                 n   += 1
-#             self.slug = slug
-#         super().save(*args, **kwargs)
-
-#     def __str__(self):
-#         return f"{self.name} ({self.city})"
-
-    
 # apps/shops/models.py
 from django.db import models
 from django.utils.text import slugify
@@ -64,9 +16,17 @@ class Shop(models.Model):
     description = models.TextField(blank=True)
     address     = models.CharField(max_length=255, blank=True)
     city        = models.CharField(max_length=100, blank=True)
+    is_walkin = models.BooleanField(default=False)
     phone       = models.CharField(max_length=20, blank=True)
     logo        = models.ImageField(upload_to="shops/logos/", null=True, blank=True)
-    is_verified = models.BooleanField(default=False)
+    is_verified         = models.BooleanField(default=False)
+    verification_status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('verified', 'Verified'), ('rejected', 'Rejected')],
+        default='pending',
+    )
+    rejection_reason    = models.TextField(blank=True)
+
     # ✅ Delivery settings
     #-----------------------ADD-START----------------------------------------------------
     has_delivery    = models.BooleanField(default=True)
@@ -84,8 +44,13 @@ class Shop(models.Model):
     temporary_close_note  = models.CharField(max_length=255, blank=True)
 
     created_at  = models.DateTimeField(auto_now_add=True)
+    #--------------Add-Start--------------------------------
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
+        if self.owner.role == "cold_storage":
+             self.is_walkin = True
         if not self.slug:
             base = slugify(self.name) or "shop"
             self.slug = base + "-" + str(uuid.uuid4())[:6]

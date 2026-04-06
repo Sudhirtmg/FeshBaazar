@@ -1,7 +1,14 @@
 npx create-next-app@latest
 npm install axios js-cookie zustand
-# axios — makes API calls to your Django backend
-# js-cookie — stores the JWT token in cookies
-# zustand — simple state management for auth state
 npm install -D @types/js-cookie 
-#The extra `@types/js-cookie` is needed for TypeScript to understand js-cookie.
+npm install leaflet react-leaflet
+npm install --save-dev @types/leaflet
+npm install framer-motion
+npm install recharts
+npm install jspdf xlsx file-saver
+npm install --save-dev @types/file-saver
+npm install react-select
+npm install xlsx file-saver
+npm install jspdf jspdf-autotable
+npm install react-countup
+npm install react-hot-toast

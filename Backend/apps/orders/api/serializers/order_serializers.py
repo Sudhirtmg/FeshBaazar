@@ -1,7 +1,7 @@
 # apps/orders/api/serializers/order_serializers.py
 from rest_framework import serializers
 from apps.orders.models import Order, OrderItem, OrderStatusHistory
-
+from django.utils import timezone
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,6 +29,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model  = Order
         fields = [
             "id", "shop", "status", "payment_method",
+            "fulfillment_type", "scheduled_time",
             "subtotal", "delivery_fee", "total_amount",
             "delivery_name", "delivery_phone", "delivery_address",
             "notes", "items", "history", "created_at",
@@ -49,3 +50,32 @@ class CheckoutSerializer(serializers.Serializer):
 class StatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Order.Status.choices)
     note   = serializers.CharField(required=False, allow_blank=True)
+    
+class CheckoutSerializer(serializers.Serializer):
+    delivery_name    = serializers.CharField(max_length=255)
+    delivery_phone   = serializers.CharField(max_length=20)
+    delivery_address = serializers.CharField(required=False, allow_blank=True)
+    payment_method   = serializers.ChoiceField(
+        choices=Order.PaymentMethod.choices,
+        default=Order.PaymentMethod.COD,
+    )
+    fulfillment_type = serializers.ChoiceField(
+        choices=Order.FulfillmentType.choices,
+        default=Order.FulfillmentType.DELIVERY,
+    )
+    scheduled_time = serializers.DateTimeField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, data):
+        if data.get('fulfillment_type') == Order.FulfillmentType.DELIVERY:
+            if not data.get('delivery_address'):
+                raise serializers.ValidationError(
+                    {"delivery_address": "Delivery address is required for delivery orders."}
+                )
+        if data.get('scheduled_time'):
+           
+            if data['scheduled_time'] <= timezone.now():
+                raise serializers.ValidationError(
+                    {"scheduled_time": "Scheduled time must be in the future."}
+                )
+        return data

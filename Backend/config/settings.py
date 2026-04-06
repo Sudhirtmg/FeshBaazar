@@ -31,8 +31,13 @@ INSTALLED_APPS = [
     'apps.deliveries',
     'apps.customers',
     'apps.common',
+    'apps.notifications',
+    'apps.b2b',
+    'channels', 
 ]
-
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.PhoneBackend",
+]
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # must be first
     'django.middleware.security.SecurityMiddleware',
@@ -66,22 +71,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 # for local development
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": config("DB_NAME", default="freshbazaar_db"),
-#         "USER": config("DB_USER", default="freshbazaar_user"),
-#         "PASSWORD": config("DB_PASSWORD", default=""),
-#         "HOST": config("DB_HOST", default="localhost"),
-#         "PORT": config("DB_PORT", default="5432"),
-#     }
-# }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME", default="freshbazaar_db"),
+        "USER": config("DB_USER", default="freshbazaar_user"),
+        "PASSWORD": config("DB_PASSWORD", default=""),
+        "HOST": config("DB_HOST", default="localhost"),
+        "PORT": config("DB_PORT", default="5432"),
+    }
+}
 
 
 # for live
-DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'))
-}
+# DATABASES = {
+#     'default': dj_database_url.parse(config('DATABASE_URL'))
+# }
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -110,12 +115,12 @@ SIMPLE_JWT = {
 # -------------------------------------------------------
 # CORS
 # -------------------------------------------------------
-# CORS_ALLOW_ALL_ORIGINS = True  # development only
+CORS_ALLOW_ALL_ORIGINS = True  # development only
 
 # for live
-CORS_ALLOWED_ORIGINS = [
-    "https://freshbaazaar.vercel.app",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "https://freshbaazaar.vercel.app",
+# ]
 
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -164,3 +169,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # for live
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}

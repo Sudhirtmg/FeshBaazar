@@ -30,15 +30,15 @@ class ShopAdmin(admin.ModelAdmin):
         "name",
         "owner",
         "city",
-        # -------------------------change start-------------------------
-        # replaced "is_verified" and "is_open" with colored badge methods
-        "verification_status",
+        "is_walkin",
+        "address",
+        "location_link",
+        "verification_badge",
         "is_open_now",
-        # -------------------------change end-------------------------
         "is_temporarily_closed",
         "created_at",
     ]
-    list_filter = ["is_verified", "is_temporarily_closed", "city"]
+    list_filter = ["is_verified", "is_walkin", "is_temporarily_closed", "city"]
     search_fields = ["name", "owner__phone"]
     list_editable = ["is_temporarily_closed"]
     # -------------------------change start-------------------------
@@ -46,7 +46,7 @@ class ShopAdmin(admin.ModelAdmin):
     ordering = ["is_verified", "-created_at"]
     # -------------------------change end-------------------------
     inlines = [ShopScheduleInline]
-    readonly_fields = ["created_at", "slug"]
+    readonly_fields = ["created_at", "slug", "map_preview"]
 
     # -------------------------add start-------------------------
     fieldsets = (
@@ -61,6 +61,10 @@ class ShopAdmin(admin.ModelAdmin):
                     "phone",
                     "address",
                     "city",
+                    "is_walkin",
+                    "latitude",
+                    "longitude",
+                    "map_preview",
                     "logo",
                 )
             },
@@ -68,7 +72,7 @@ class ShopAdmin(admin.ModelAdmin):
         (
             "Verification",
             {
-                "fields": ("is_verified",),
+                "fields": ("is_verified", "verification_status", "rejection_reason"),
                 "description": "⚠️ Verify only after confirming shop info is accurate.",
             },
         ),
@@ -96,14 +100,18 @@ class ShopAdmin(admin.ModelAdmin):
     actions = ["verify_shops", "unverify_shops"]
 
     # -------------------------add start-------------------------
-    def verification_status(self, obj):
-        if obj.is_verified:
-            return mark_safe(
-                '<span style="color:green;font-weight:bold">Verified</span>'
-            )
-        return mark_safe('<span style="color:orange;font-weight:bold">Pending</span>')
+    def verification_badge(self, obj):
+        colors = {
+            "verified": "green",
+            "pending": "orange",
+            "rejected": "red",
+        }
+        color = colors.get(obj.verification_status, "gray")
+        return mark_safe(
+            f'<span style="color:{color};font-weight:bold">{obj.verification_status.title()}</span>'
+        )
 
-    verification_status.short_description = "Status"
+    verification_badge.short_description = "Status"
 
     def is_open_now(self, obj):
         if obj.is_open:
@@ -114,16 +122,88 @@ class ShopAdmin(admin.ModelAdmin):
     # -------------------------add end-------------------------
 
     def verify_shops(self, request, queryset):
-        queryset.update(is_verified=True)
+        for shop in queryset:
+            shop.is_verified = True
+            shop.verification_status = "verified"
+            shop.rejection_reason = ""
+            shop.save()
+            from apps.notifications.models import Notification
+
+            Notification.objects.create(
+                user=shop.owner,
+                type=Notification.Type.SHOP_VERIFIED,
+                title="🎉 Shop verified!",
+                message=f"Your shop '{shop.name}' has been verified and is now live.",
+            )
         self.message_user(request, f"{queryset.count()} shop(s) verified.")
 
     verify_shops.short_description = "✓ Verify selected shops"
 
     def unverify_shops(self, request, queryset):
-        queryset.update(is_verified=False)
+        for shop in queryset:
+            shop.is_verified = False
+            shop.verification_status = "rejected"
+            shop.save()
+            from apps.notifications.models import Notification
+
+            Notification.objects.create(
+                user=shop.owner,
+                type=Notification.Type.SHOP_REJECTED,
+                title="❌ Verification denied",
+                message=f"Your shop '{shop.name}' was not verified. Please update your details and resubmit.",
+            )
         self.message_user(request, f"{queryset.count()} shop(s) unverified.")
 
     unverify_shops.short_description = "✗ Unverify selected shops"
+
+    # --------------Add-Start----------------
+    def location_link(self, obj):
+        if obj.latitude and obj.longitude and obj.latitude != 0 and obj.longitude != 0:
+            url = f"https://www.google.com/maps?q={obj.latitude},{obj.longitude}"
+            # --------------Upgrade-Start----------------
+            return mark_safe(
+                f'<a href="{url}" target="_blank" '
+                f'style="color:#16a34a;font-weight:600;">📍 Open Map</a>'
+            )
+            # --------------Upgrade-End----------------
+        return "No location"
+
+    location_link.short_description = "Location"
+    # --------------Add-End----------------
+
+    def map_preview(self, obj):
+        if obj.latitude and obj.longitude and obj.latitude != 0 and obj.longitude != 0:
+            return mark_safe(
+                f'<iframe width="100%" height="200" '
+                f'src="https://maps.google.com/maps?q={obj.latitude},{obj.longitude}&z=15&output=embed"></iframe>'
+            )
+        return "No location"
+
+    # --------------Add-Start--------------------------------
+    def save_model(self, request, obj, form, change):
+        if change and "is_verified" in form.changed_data:
+            from apps.notifications.models import Notification
+
+            if obj.is_verified:
+                obj.verification_status = "verified"
+                obj.rejection_reason = ""
+                Notification.objects.create(
+                    user=obj.owner,
+                    type=Notification.Type.SHOP_VERIFIED,
+                    title="🎉 Shop verified!",
+                    message=f"Your shop '{obj.name}' has been verified and is now live.",
+                )
+            else:
+                obj.verification_status = "rejected"
+                Notification.objects.create(
+                    user=obj.owner,
+                    type=Notification.Type.SHOP_REJECTED,
+                    title="❌ Verification denied",
+                    message=f"Your shop '{obj.name}' was not verified. Please update your details and resubmit.",
+                )
+        super().save_model(request, obj, form, change)
+
+    # --------------Add-End--------------------------------
 
 
 @admin.register(ShopSchedule)

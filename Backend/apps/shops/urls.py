@@ -1,17 +1,3 @@
-# from django.urls import path
-# from .api.views.shop_views import (
-#     ShopListView, ShopCreateView, ShopDetailView,
-#     ShopUpdateView, MyShopView
-# )
-
-# urlpatterns = [
-#     path("",                    ShopListView.as_view(),   name="shop-list"),
-#     path("my-shop/",            MyShopView.as_view(),     name="my-shop"),
-#     path("create/",             ShopCreateView.as_view(),  name="shop-create"),
-#     path("<slug:slug>/",        ShopDetailView.as_view(), name="shop-detail"),
-#     path("<slug:slug>/update/", ShopUpdateView.as_view(), name="shop-update"),
-# ]
-
 # apps/shops/urls.py
 from django.urls import path
 from apps.shops.api.views.shop_views import (
@@ -20,9 +6,16 @@ from apps.shops.api.views.shop_views import (
     MyShopView,
     ShopOnboardingView,
     ShopScheduleView,
-    BecomeShopOwnerView,
+    
     ShopUpdateView,
+   
 )
+
+from apps.shops.api.views.become_shop_owner_views import (
+    BecomeShopOwnerView,
+    CancelShopOwnerRequestView,
+)
+from .api.views.shop_views import CreateWalkInShopView
 
 urlpatterns = [
     path("",                    ShopListView.as_view(),       name="shop-list"),
@@ -30,6 +23,11 @@ urlpatterns = [
     path("onboarding/",         ShopOnboardingView.as_view(), name="shop-onboarding"),
     path("schedule/",           ShopScheduleView.as_view(),   name="shop-schedule"),
     path("become-shop-owner/",  BecomeShopOwnerView.as_view(),name="become-shop-owner"),
+    #--------------Add-Start--------------------------------
+    path("cancel-owner-request/",    CancelShopOwnerRequestView.as_view(),  name="cancel-owner-request"),
+    #--------------Add-End--------------------------------
+    path("create-walkin/", CreateWalkInShopView.as_view()),
     path("<slug:slug>/",        ShopDetailView.as_view(),     name="shop-detail"),
     path("<slug:slug>/update/", ShopUpdateView.as_view(),     name="shop-update"),
+
 ]

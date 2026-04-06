@@ -27,11 +27,13 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         CUSTOMER       = "customer",        "Customer"
         SHOP_OWNER     = "shop_owner",      "Shop Owner"
+        COLD_STORAGE   = "cold_storage",    "Cold Storage"
         DELIVERY_RIDER = "delivery_rider",  "Delivery Rider"
         STAFF          = "staff",           "Staff"
         ADMIN          = "admin",           "Admin"
 
     # Remove username — phone is the login field
+    name = models.CharField(max_length=255, blank=True)
     username       = None
     email          = models.EmailField(unique=True, blank=True, null=True)
     phone          = models.CharField(max_length=20, unique=True)
@@ -43,6 +45,20 @@ class User(AbstractUser):
     profile_image  = models.ImageField(
         upload_to="profiles/", null=True, blank=True
     )
+    owner = models.ForeignKey(
+    "self",
+    on_delete=models.CASCADE,
+    null=True,
+    blank=True,
+    related_name="staff_members"
+    )
+    can_collect_payment = models.BooleanField(default=False)
+    can_view_ledger = models.BooleanField(default=False)
+    can_create_order = models.BooleanField(default=False)
+    can_manage_products = models.BooleanField(default=False)
+    can_view_orders = models.BooleanField(default=False)
+    can_deliver_orders = models.BooleanField(default=False)
+    can_confirm_orders = models.BooleanField(default=False)
 
     USERNAME_FIELD  = "phone"
     REQUIRED_FIELDS = ["email"]   # asked when running createsuperuser
@@ -50,6 +66,9 @@ class User(AbstractUser):
     objects = UserManager()
 
     # --- convenience helpers used in permissions ---
+    def is_cold_storage(self):
+        return self.role == self.Role.COLD_STORAGE
+    
     def is_shop_owner(self):
         return self.role == self.Role.SHOP_OWNER
 
@@ -61,3 +80,21 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.phone} ({self.get_role_display()})"
+    
+class StaffActionLog(models.Model):
+    staff = models.ForeignKey(
+        "User",
+        on_delete=models.CASCADE,
+        related_name="logs"
+    )
+    action = models.CharField(max_length=255)
+    performed_by = models.ForeignKey(
+        "User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="performed_logs"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.staff.phone} - {self.action}"

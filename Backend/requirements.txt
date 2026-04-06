@@ -8,3 +8,7 @@ djangorestframework-simplejwt
 gunicorn
 whitenoise
 dj-database-url
+channels 
+channels-redis
+daphne
+daphne config.asgi:application
